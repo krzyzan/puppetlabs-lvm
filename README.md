@@ -9,6 +9,8 @@ History
 
   * Use fully qualified names for logical_volume
 
+  * Implement 'instances' method for all LVM resources
+
 2012-08-14 : rcoleman
 
   * Version 0.1.1 : More style-guide compliant, fixed a closing } bug and updated README

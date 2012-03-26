@@ -50,6 +50,16 @@ Puppet::Type.type(:logical_volume).provide :lvm do
         !execute(cmd, :failonfail => false, :combine => false).empty?
     end
 
+    def self.instances
+        inst = []
+        cmd = [command(:lvs), '--noheading', '-o', 'vg_name,lv_name', '--separator', '/']
+        lines = execute(cmd, :combine => false) 
+        lines.inject([]) do |inst, name|
+            inst << new(:name => "/dev/"+name.strip)
+        end
+        inst
+    end
+
     def size
         if @resource[:size] =~ /^\d+\.?\d{0,2}([KMGTPE])/i
             unit = $1.downcase

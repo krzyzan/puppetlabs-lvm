@@ -22,6 +22,16 @@ Puppet::Type.type(:volume_group).provide :lvm do
         false
     end
 
+    def self.instances
+        inst = []
+        cmd = [command(:vgs), '--noheading', '-o', 'vg_name']
+        lines = execute(cmd, :combine => false)
+        lines.inject([]) do |inst, name|
+            inst << new(:name => name.strip)
+        end
+        inst
+    end
+
     def physical_volumes=(new_volumes = [])
         # Only take action if createonly is false just to be safe
         #  this is really only here to enforce the createonly setting

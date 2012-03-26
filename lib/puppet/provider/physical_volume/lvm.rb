@@ -38,4 +38,14 @@ Puppet::Type.type(:physical_volume).provide(:lvm) do
       end
     end
 
+    def self.instances
+        inst = []
+        cmd = [command(:pvs), '--noheading', '-o', 'pv_name']
+        lines = execute(cmd, :combine => false)
+        lines.inject([]) do |inst, name|
+            inst << new(:name => name.strip)
+        end
+        inst
+    end
+
 end
