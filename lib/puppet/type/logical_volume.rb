@@ -7,16 +7,10 @@ Puppet::Type.newtype(:logical_volume) do
             automatically added to the volume group's device path (e.g., '/dev/$vg/$lv')."
     isnamevar
     validate do |value|
-      if value.include?(File::SEPARATOR)
-        raise ArgumentError, "Volume names must be entirely unqualified"
+      unless value =~ /^\/dev\/\w+\/\w+$/
+        raise ArgumentError, "Volume names must be fully qualified"
       end
     end
-  end
-
-  newparam(:volume_group) do
-    desc "The volume group name associated with this logical volume.  This will automatically
-            set this volume group as a dependency, but it must be defined elsewhere using the
-            volume_group resource type."
   end
 
   newparam(:initial_size) do
@@ -90,6 +84,6 @@ Puppet::Type.newtype(:logical_volume) do
   end
 
   autorequire(:volume_group) do
-    @parameters[:volume_group].value
+    @parameters[:name].value.split('/')[2]
   end
 end

@@ -5,6 +5,10 @@ Provides Logical Resource Management (LVM) features for Puppet.
 
 History
 -------
+2013-02-21 : krzyzan
+
+  * Use fully qualified names for logical_volume
+
 2012-08-14 : rcoleman
 
   * Version 0.1.1 : More style-guide compliant, fixed a closing } bug and updated README
@@ -51,9 +55,8 @@ volume_group { 'myvg':
   physical_volumes => '/dev/hdc',
 }
 
-logical_volume { 'mylv':
+logical_volume { '/dev/myvg/mylv':
   ensure       => present,
-  volume_group => 'myvg',
   size         => '20G',
 }
 
@@ -165,12 +168,6 @@ Optional Values
 Limitations
 -----------
 
-### Namespacing
-
-Due to puppet's lack of composite keys for resources, you currently
-cannot define two `logical_volume` resources with the same name but
-a different `volume_group`.
-
 ### Removing Physical Volumes
 
 You should not remove a `physical_volume` from a `volume_group`
@@ -222,3 +219,5 @@ Cédric Jeanneret <cedric.jeanneret@camptocamp.com>
 Raphaël Pinson <raphael.pinson@camptocamp.com>
 
 Garrett Honeycutt <code@garretthoneycutt.com>
+
+Krzysztof Krzyżanowski <krzysztof.t.krzyzanowski@gmail.com>

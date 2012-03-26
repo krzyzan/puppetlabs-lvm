@@ -14,7 +14,7 @@ Puppet::Type.type(:logical_volume).provide :lvm do
                       :resize4fs  => 'resize4fs'
 
     def create
-        args = ['-n', @resource[:name]]
+        args = ['-n', @resource[:name].split('/')[3]]
         if @resource[:size]
             args.push('--size', @resource[:size])
         elsif @resource[:initial_size]
@@ -36,17 +36,18 @@ Puppet::Type.type(:logical_volume).provide :lvm do
             args.push('--stripesize', @resource[:stripesize])
         end
 
-        args << @resource[:volume_group]
+        args << @resource[:name].split('/')[2]
         lvcreate(*args)
     end
 
     def destroy
-        dmsetup('remove', "#{@resource[:volume_group]}-#{@resource[:name]}")
-        lvremove('-f', path)
+        dmsetup('remove', "#{@resource[:name].split('/')[2]}-#{@resource[:name].split('/')[3]}")
+        lvremove('-f', @resource[:name])
     end
 
     def exists?
-        lvs(@resource[:volume_group]) =~ lvs_pattern
+        cmd = [command(:lvs), '--noheading', @resource[:name]]
+        !execute(cmd, :failonfail => false, :combine => false).empty?
     end
 
     def size
@@ -54,7 +55,7 @@ Puppet::Type.type(:logical_volume).provide :lvm do
             unit = $1.downcase
         end
 
-        raw = lvs('--noheading', '--unit', unit, path)
+        raw = lvs('--noheading', '--unit', unit, @resource[:name])
 
         if raw =~ /\s+(\d+)\.(\d+)#{unit}/i
             if $2.to_i == 00
@@ -83,7 +84,7 @@ Puppet::Type.type(:logical_volume).provide :lvm do
         end
 
         ## Get the extend size
-        if lvs('--noheading', '-o', 'vg_extent_size', '--units', 'k', path) =~ /\s+(\d+)\.\d+k/i
+        if lvs('--noheading', '-o', 'vg_extent_size', '--units', 'k', @resource[:name]) =~ /\s+(\d+)\.\d+k/i
             vg_extent_size = $1.to_i
         end
 
@@ -112,28 +113,17 @@ Puppet::Type.type(:logical_volume).provide :lvm do
                 fail( "Cannot extend to size #{new_size} because VG extent size is #{vg_extent_size} KB" )
             end
 
-            lvextend( '-L', new_size, path) || fail( "Cannot extend to size #{new_size} because lvextend failed." )
+            lvextend( '-L', new_size, @resource[:name]) || fail( "Cannot extend to size #{new_size} because lvextend failed." )
 
-            blkid_type = blkid(path)
+            blkid_type = blkid(@resource[:name])
             if command(:resize4fs) and blkid_type =~ /\bTYPE=\"(ext4)\"/
-              resize4fs( path) || fail( "Cannot resize file system to size #{new_size} because resize2fs failed." )
+              resize4fs( @resource[:name]) || fail( "Cannot resize file system to size #{new_size} because resize2fs failed." )
             elsif blkid_type =~ /\bTYPE=\"(ext[34])\"/
-              resize2fs( path) || fail( "Cannot resize file system to size #{new_size} because resize2fs failed." )
+              resize2fs( @resource[:name]) || fail( "Cannot resize file system to size #{new_size} because resize2fs failed." )
             elsif blkid_type =~ /\bTYPE=\"(xfs)\"/
-              xfs_growfs( path) || fail( "Cannot resize filesystem to size #{new_size} because xfs_growfs failed." )
+              xfs_growfs( @resource[:name]) || fail( "Cannot resize filesystem to size #{new_size} because xfs_growfs failed." )
             end
 
         end
     end
-
-    private
-
-    def lvs_pattern
-        /\s+#{Regexp.quote @resource[:name]}\s+/
-    end
-
-    def path
-        "/dev/#{@resource[:volume_group]}/#{@resource[:name]}"
-    end
-
 end
