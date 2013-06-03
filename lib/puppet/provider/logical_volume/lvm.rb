@@ -63,6 +63,8 @@ Puppet::Type.type(:logical_volume).provide :lvm do
     def size
         if @resource[:size] =~ /^\d+\.?\d{0,2}([KMGTPE])/i
             unit = $1.downcase
+        else
+            unit = "m"
         end
 
         raw = lvs('--noheading', '--unit', unit, @resource[:name])
